@@ -5,6 +5,7 @@ import ytdl from "ytdl-core";
 import Database from "better-sqlite3";
 import path from "path";
 import { fileURLToPath } from "url";
+import fs from "fs";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -29,6 +30,16 @@ async function startServer() {
   app.use(express.json());
 
   // API Routes
+  app.get("/api/health", (req, res) => {
+    console.log("Health check requested");
+    res.json({ status: "ok" });
+  });
+
+  app.get("/test", (req, res) => {
+    console.log("Test route requested");
+    res.send("Server is alive and responding");
+  });
+
   app.get("/api/info", async (req, res) => {
     const { url } = req.query;
     if (!url || typeof url !== "string") {
@@ -45,14 +56,13 @@ async function startServer() {
           source: "youtube",
           title: info.videoDetails.title,
           thumbnail: info.videoDetails.thumbnails[0].url,
-          duration: info.videoDetails.lengthSeconds,
+          duration: Number(info.videoDetails.lengthSeconds),
           formats: [
             ...formats.map(f => ({ quality: f.qualityLabel, container: f.container, itag: f.itag, type: "video" })),
             ...audioOnly.map(f => ({ quality: f.audioBitrate + "kbps", container: f.container, itag: f.itag, type: "audio" }))
           ]
         });
       } else {
-        // Mock for other sources
         res.json({
           source: "other",
           title: "Video from " + new URL(url).hostname,
@@ -79,7 +89,7 @@ async function startServer() {
       if (ytdl.validateURL(url)) {
         const titleStr = typeof title === "string" ? title : "video";
         const formatStr = typeof format === "string" ? format : "video";
-        const filename = `${titleStr}.${formatStr === "audio" ? "mp3" : "mp4"}`;
+        const filename = `${titleStr.replace(/[^a-z0-9]/gi, '_')}.${formatStr === "audio" ? "mp3" : "mp4"}`;
         res.header("Content-Disposition", `attachment; filename="${filename}"`);
         
         const options: any = {
@@ -88,11 +98,9 @@ async function startServer() {
         
         ytdl(url, options).pipe(res);
 
-        // Save to history
         const stmt = db.prepare("INSERT INTO history (url, title, thumbnail, format) VALUES (?, ?, ?, ?)");
         stmt.run(url, titleStr, "", formatStr);
       } else {
-        // Mock download for other sources
         res.status(400).json({ error: "Only YouTube is supported in this demo" });
       }
     } catch (error) {
@@ -110,9 +118,23 @@ async function startServer() {
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({
       server: { middlewareMode: true },
-      appType: "spa",
+      appType: "custom",
     });
     app.use(vite.middlewares);
+
+    app.use("*", async (req, res, next) => {
+      const url = req.originalUrl;
+      console.log(`Serving index.html for: ${url}`);
+      try {
+        let template = fs.readFileSync(path.resolve(__dirname, "index.html"), "utf-8");
+        template = await vite.transformIndexHtml(url, template);
+        res.status(200).set({ "Content-Type": "text/html" }).end(template);
+      } catch (e) {
+        console.error(`Error serving index.html: ${e}`);
+        vite.ssrFixStacktrace(e as Error);
+        next(e);
+      }
+    });
   } else {
     app.use(express.static(path.join(__dirname, "dist")));
     app.get("*", (req, res) => {
@@ -126,3 +148,4 @@ async function startServer() {
 }
 
 startServer();
+

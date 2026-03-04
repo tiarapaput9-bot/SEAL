@@ -1,6 +1,8 @@
 import React from 'react';
 import { Download, History, Link as LinkIcon, Video, Music, Info, AlertCircle, CheckCircle2, Loader2 } from 'lucide-react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence } from 'framer-motion';
+
+console.log("App component rendering");
 
 interface VideoFormat {
   quality: string;
