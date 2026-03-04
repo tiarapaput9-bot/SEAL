@@ -1,0 +1,5 @@
+{
+  "name": "LinkDownloader",
+  "description": "Platform pengunduh video dan audio dari berbagai sumber berbasis tautan.",
+  "requestFramePermissions": []
+}
