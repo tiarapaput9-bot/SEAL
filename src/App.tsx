@@ -34,6 +34,18 @@ export default function App() {
   const [videoInfo, setVideoInfo] = React.useState<VideoInfo | null>(null);
   const [error, setError] = React.useState<string | null>(null);
   const [history, setHistory] = React.useState<HistoryItem[]>([]);
+  const [isOnline, setIsOnline] = React.useState(navigator.onLine);
+
+  React.useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
 
   const fetchHistory = async () => {
     try {
@@ -52,6 +64,11 @@ export default function App() {
   const handleGetInfo = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!url) return;
+
+    if (!isOnline) {
+      setError('Anda sedang offline. Mohon hubungkan ke internet untuk menganalisis tautan.');
+      return;
+    }
 
     setLoading(true);
     setError(null);
@@ -81,6 +98,11 @@ export default function App() {
     <div className="min-h-screen bg-[#f5f5f5] text-slate-900 font-sans selection:bg-indigo-100">
       {/* Navbar */}
       <nav className="bg-white border-b border-slate-200 sticky top-0 z-50">
+        {!isOnline && (
+          <div className="bg-amber-500 text-white text-center py-1 text-xs font-bold">
+            Mode Offline: Beberapa fitur mungkin tidak tersedia.
+          </div>
+        )}
         <div className="max-w-5xl mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-indigo-200">

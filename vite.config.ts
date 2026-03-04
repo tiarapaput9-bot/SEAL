@@ -6,6 +6,7 @@ import express from 'express';
 import cors from 'cors';
 import ytdl from 'ytdl-core';
 import Database from 'better-sqlite3';
+import { VitePWA } from 'vite-plugin-pwa';
 
 export default defineConfig(({mode}) => {
   const env = loadEnv(mode, '.', '');
@@ -26,6 +27,28 @@ export default defineConfig(({mode}) => {
     plugins: [
       react(), 
       tailwindcss(),
+      VitePWA({
+        registerType: 'autoUpdate',
+        includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'mask-icon.svg'],
+        manifest: {
+          name: 'LinkDownloader',
+          short_name: 'LinkDownloader',
+          description: 'Unduh Video & Audio Dari Mana Saja',
+          theme_color: '#4f46e5',
+          icons: [
+            {
+              src: 'https://picsum.photos/seed/downloader/192/192',
+              sizes: '192x192',
+              type: 'image/png'
+            },
+            {
+              src: 'https://picsum.photos/seed/downloader/512/512',
+              sizes: '512x512',
+              type: 'image/png'
+            }
+          ]
+        }
+      }),
       {
         name: 'api-server',
         configureServer(server) {
