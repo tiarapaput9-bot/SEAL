@@ -117,24 +117,14 @@ async function startServer() {
   // Vite middleware for development
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({
-      server: { middlewareMode: true },
-      appType: "custom",
+      server: { 
+        middlewareMode: true,
+        host: '0.0.0.0',
+        port: 3000
+      },
+      appType: "spa",
     });
     app.use(vite.middlewares);
-
-    app.use("*", async (req, res, next) => {
-      const url = req.originalUrl;
-      console.log(`Serving index.html for: ${url}`);
-      try {
-        let template = fs.readFileSync(path.resolve(__dirname, "index.html"), "utf-8");
-        template = await vite.transformIndexHtml(url, template);
-        res.status(200).set({ "Content-Type": "text/html" }).end(template);
-      } catch (e) {
-        console.error(`Error serving index.html: ${e}`);
-        vite.ssrFixStacktrace(e as Error);
-        next(e);
-      }
-    });
   } else {
     app.use(express.static(path.join(__dirname, "dist")));
     app.get("*", (req, res) => {
